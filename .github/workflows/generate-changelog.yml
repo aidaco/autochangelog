@@ -1,0 +1,68 @@
+name: Generate Changelog
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+    branches:
+      - main
+jobs:
+  generate-changelog:
+    name: Generate Changelog
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Install UV
+        uses: astral-sh/setup-uv@v6
+      - name: Generate changelog
+        id: generate
+        env:
+          AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
+          AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+          AWS_DEFAULT_REGION: ${{vars.AWS_DEFAULT_REGION}}
+        run: |
+          EOF1=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          EOF2=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          cat << $EOF1 >> $GITHUB_OUTPUT
+          changelog<<$EOF2
+          $(uv run python generate_changelog.py $GITHUB_BASE_REF $GITHUB_HEAD_REF)
+          $EOF2
+          $EOF1
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const header = '### Automated Changelog';
+            const body = `${header}\n\n${{ steps.generate.outputs.changelog }}`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existingComment = comments.find(comment => 
+              comment.user.login === 'github-actions[bot]' && comment.body.startsWith(header)
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            }
