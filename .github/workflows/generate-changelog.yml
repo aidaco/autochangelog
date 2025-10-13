@@ -31,7 +31,7 @@ jobs:
           EOF2=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
           cat << $EOF1 >> $GITHUB_OUTPUT
           changelog<<$EOF2
-          $(uv run python generate_changelog.py $GITHUB_BASE_REF $GITHUB_HEAD_REF)
+          $(uv run generate_changelog.py $GITHUB_BASE_REF $GITHUB_HEAD_REF)
           $EOF2
           $EOF1
       - name: Comment on PR
