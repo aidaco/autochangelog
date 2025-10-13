@@ -74,50 +74,30 @@ You may also find the output of `git diff origin/{base_ref}..origin/{head_ref}` 
 """
 
 
-class TextContent(TypedDict):
-    text: str
-    type: str
-
-
-type Content = TextContent  # | ImageContent, etc.
-
-
-class Message(TypedDict):
-    role: Literal["user", "assistant"]
-    content: list[Content]
-
-
-def invoke_anthropic(
-    client, model_id: str, messages: list[Message], max_tokens: int = 4000
-) -> Message:
+def invoke_anthropic(client, model_id: str, prompt: str, max_tokens: int = 4000) -> str:
     try:
+        messages = [
+            {
+                "role": "user",
+                "content": [{"type": "text", "text": prompt}],
+            }
+        ]
         body = {
             "messages": messages,
             "max_tokens": max_tokens,
             "anthropic_version": "bedrock-2023-05-31",
         }
+        start = time.perf_counter()
         response = client.invoke_model(
             modelId=model_id, body=json.dumps(body), contentType="application/json"
         )
         body = response["body"].read()
-        return {"role": "assistant", "content": json.loads(body)["content"]}
+        logger.info(f"Finished generation in {time.perf_counter() - start:.2f}s")
+        content = json.loads(body)["content"]
+        return "\n".join(block["text"] for block in content)
     except Exception as exc:
         logger.error(f"An error occurred while invoking the LLM {exc}")
         sys.exit(1)
-
-
-def generate_response(client, model_id: str, prompt: str) -> str:
-    response = invoke_anthropic(
-        client,
-        model_id,
-        [
-            {
-                "role": "user",
-                "content": [{"type": "text", "text": prompt}],
-            }
-        ],
-    )
-    return "\n".join(block["text"] for block in response["content"])
 
 
 def run_shell(cmd: list[str]) -> str:
@@ -136,10 +116,7 @@ def run_shell(cmd: list[str]) -> str:
         sys.exit(1)
 
 
-def main(base_ref: str, head_ref: str):
-    if not base_ref or not head_ref:
-        logger.error("Must provide both base_ref and head_ref.")
-        sys.exit(1)
+def generate_changelog(base_ref: str, head_ref: str) -> str:
     context = {
         "base_ref": base_ref,
         "head_ref": head_ref,
@@ -147,19 +124,25 @@ def main(base_ref: str, head_ref: str):
         "git_diff": run_shell(["git", "diff", f"origin/{base_ref}..origin/{head_ref}"]),
     }
     prompt = PROMPT.format(**context)
+    logger.info(f"Prompt is: {prompt}")
     client = boto3.client("bedrock-runtime")
-    start = time.perf_counter()
-    text = generate_response(client, MODEL_ID, prompt)
-    print(text)
-    logger.info(f"Finished generation in {time.perf_counter() - start:.2f}s")
-    client.close()
+    try:
+        text = invoke_anthropic(client, MODEL_ID, prompt)
+        logger.info(f"Generated changelog: {text}")
+        return text
+    finally:
+        client.close()
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     load_dotenv()
     parser = argparse.ArgumentParser(prog="generate_changelog")
     parser.add_argument("base_ref")
     parser.add_argument("head_ref")
     args = parser.parse_args()
-    logging.basicConfig(level=logging.INFO)
-    main(args.base_ref, args.head_ref)
+    if not args.base_ref or not args.head_ref:
+        logger.error("Must provide both base_ref and head_ref.")
+        sys.exit(1)
+    text = generate_changelog(args.base_ref, args.head_ref)
+    print(text)
