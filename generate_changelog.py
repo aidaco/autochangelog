@@ -62,12 +62,12 @@ EXAMPLE OUTPUT
 CONTEXT
 PR from base ref '{base_ref}' to head ref '{head_ref}'
 
-The following output of `git log {base_ref}..{head_ref}` contains the titles and descriptions of all changes between the two refs. This is your primary source of information.
+The following output of `git log origin/{base_ref}..origin/{head_ref}` contains the titles and descriptions of all changes between the two refs. This is your primary source of information.
 ```
 {git_log}
 ```
 
-You may also find the output of `git diff` helpful. Use it for additional context, but do not reference code directly in your output.
+You may also find the output of `git diff origin/{base_ref}..origin/{head_ref}` helpful. Use it for additional context, but do not reference code directly in your output.
 ```
 {git_diff}
 ```
@@ -143,8 +143,8 @@ def main(base_ref: str, head_ref: str):
     context = {
         "base_ref": base_ref,
         "head_ref": head_ref,
-        "git_log": run_shell(["git", "log", f"{base_ref}..{head_ref}"]),
-        "git_dif": run_shell(["git", "diff", f"{base_ref}..{head_ref}"]),
+        "git_log": run_shell(["git", "log", f"origin/{base_ref}..origin/{head_ref}"]),
+        "git_diff": run_shell(["git", "diff", f"origin/{base_ref}..origin/{head_ref}"]),
     }
     prompt = PROMPT.format(**context)
     client = boto3.client("bedrock-runtime")
