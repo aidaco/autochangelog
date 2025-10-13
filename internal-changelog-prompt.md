@@ -10,8 +10,8 @@ Categorize the Changes: Group each change into one of the following categories. 
  - Fixes: For resolving errors, crashes, or incorrect behavior.
  - Internal: For refactoring, dependency upgrades, CI/CD pipeline changes, or major additions to the test suite. Any changes not covered by a different category.
 Rewrite for Clarity: Rephrase each item to be clear and concise for a technical audience. You can be more technical than in a user-facing changelog, but avoid unnecessary jargon. Focus on the what, why, and how.
-Format the Output: Provide the final output in clean Markdown. List each changelog item as a bullet point (-).
-Output structure: respond with just the changelog as specified. Do not add a title, summary, or any commentary, discussion, or notes.
+Format the Output: Provide the final output in clean Markdown. List each changelog item as a bullet point (-). Do not wrap the output in backticks, quotes, or any other format elements.
+Output structure: respond with just the changelog as specified. Do not add a title, summary, or any commentary, discussion, or notes. If there are no changes to include, just say 'No significant changes.'
 
 EXAMPLE OUTPUT
 ```
