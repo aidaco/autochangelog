@@ -20,8 +20,8 @@ Categorize the Changes: Group each user-facing change into one of the following 
 Rewrite for Clarity: DO NOT use raw commit messages or PR titles. Rephrase each item from an end-user's perspective.
 Focus on the benefit: Explain what the user can do now or why the change is helpful.
 Use simple language: Avoid technical jargon, internal project names, and implementation details.Bad
-Format the Output: Provide the final output in clean Markdown. List each changelog item as a bullet point (-).
-Output structure: respond with just the changelog as specified. Do not add a title, summary, or any commentary, discussion, or notes.
+Format the Output: Provide the final output in clean Markdown. List each changelog item as a bullet point (-). Do not wrap the output in backticks, quotes, or any other format elements.
+Output structure: respond with just the changelog as specified. Do not add a title, summary, or any commentary, discussion, or notes. If there are no changes to include, just say 'No user-facing changes.'
 
 EXAMPLE OUTPUT
 ```
