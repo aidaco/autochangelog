@@ -1,0 +1,20 @@
+name: Generate Changelogs
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+    branches:
+      - main
+jobs:
+  generate-changelog:
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/generate-changelogs.yml
+    with:
+      aws-default-region: ${{vars.AWS_DEFAULT_REGION}}
+    secrets:
+      aws-access-key-id: ${{secrets.AWS_ACCESS_KEY_ID}}
+      aws-secret-access-key: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+      github-token: ${{secrets.GITHUB_TOKEN}}
