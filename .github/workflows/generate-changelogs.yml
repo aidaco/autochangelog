@@ -1,18 +1,19 @@
-name: Generate Changelog
+name: Generate PR Changelogs
 on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
-    branches:
-      - main
+  workflow_call:
+    inputs:
+      aws-default-region:
+        type: string
+        required: true
+    secrets:
+      aws-access-key-id:
+        required: true
+      aws-secret-access-key:
+        required: true
 jobs:
   generate-changelog:
     name: Generate Changelog
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -26,9 +27,9 @@ jobs:
           base-ref: origin/${{github.base_ref}}
           head-ref: origin/${{github.head_ref}}
         env:
-          AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
-          AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
-          AWS_DEFAULT_REGION: ${{vars.AWS_DEFAULT_REGION}}
+          AWS_ACCESS_KEY_ID: ${{secrets.aws-access-key-id}}
+          AWS_SECRET_ACCESS_KEY: ${{secrets.aws-secret-access-key}}
+          AWS_DEFAULT_REGION: ${{vars.aws-default-region}}
       - name: Generate external changelog
         id: generate-external-changelog
         uses: ./
@@ -37,9 +38,9 @@ jobs:
           base-ref: origin/${{github.base_ref}}
           head-ref: origin/${{github.head_ref}}
         env:
-          AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
-          AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
-          AWS_DEFAULT_REGION: ${{vars.AWS_DEFAULT_REGION}}
+          AWS_ACCESS_KEY_ID: ${{secrets.aws-access-key-id}}
+          AWS_SECRET_ACCESS_KEY: ${{secrets.aws-secret-access-key}}
+          AWS_DEFAULT_REGION: ${{vars.aws-default-region}}
       - name: Comment on PR
         uses: actions/github-script@v7
         env:
