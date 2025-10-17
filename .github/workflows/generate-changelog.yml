@@ -34,8 +34,8 @@ jobs:
         uses: ./
         with:
           prompt-preset: external
-          base-ref: ${{github.base_ref}}
-          head-ref: ${{github.head_ref}}
+          base-ref: origin/${{github.base_ref}}
+          head-ref: origin/${{github.head_ref}}
         env:
           AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
