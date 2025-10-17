@@ -20,28 +20,33 @@ jobs:
           fetch-depth: 0
       - name: Install UV
         uses: astral-sh/setup-uv@v6
-      - name: Generate changelog
-        id: generate
+      - name: Generate internal changelog
+        id: generate-internal-changelog
+        uses: ./
+        with:
+          prompt-file: internal-changelog-prompt.md
+          base-ref: ${{github.base_ref}}
+          head-ref: ${{github.head_ref}}
         env:
           AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
           AWS_DEFAULT_REGION: ${{vars.AWS_DEFAULT_REGION}}
-        run: |
-          EOF1=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
-          EOF2=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
-          cat << $EOF1 >> $GITHUB_OUTPUT
-          internal_changelog<<$EOF2
-          $(uv run generate_changelog.py -p internal-changelog-prompt.md origin/$GITHUB_BASE_REF origin/$GITHUB_HEAD_REF)
-          $EOF2
-          external_changelog<<$EOF2
-          $(uv run generate_changelog.py -p external-changelog-prompt.md origin/$GITHUB_BASE_REF origin/$GITHUB_HEAD_REF)
-          $EOF2
-          $EOF1
+      - name: Generate external changelog
+        id: generate-external-changelog
+        uses: ./
+        with:
+          prompt-file: external-changelog-prompt.md
+          base-ref: ${{github.base_ref}}
+          head-ref: ${{github.head_ref}}
+        env:
+          AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
+          AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+          AWS_DEFAULT_REGION: ${{vars.AWS_DEFAULT_REGION}}
       - name: Comment on PR
         uses: actions/github-script@v7
         env:
-          INTERNAL_CHANGELOG: ${{ steps.generate.outputs.internal_changelog }}
-          EXTERNAL_CHANGELOG: ${{ steps.generate.outputs.external_changelog }}
+          INTERNAL_CHANGELOG: ${{steps.generate-internal-changelog.outputs.changelog}}
+          EXTERNAL_CHANGELOG: ${{steps.generate-external-changelog.outputs.changelog}}
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
