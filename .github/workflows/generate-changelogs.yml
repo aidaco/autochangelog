@@ -10,6 +10,8 @@ on:
         required: true
       aws-secret-access-key:
         required: true
+      github-token:
+        required: true
 jobs:
   generate-changelog:
     name: Generate Changelog
@@ -40,14 +42,14 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{secrets.aws-access-key-id}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.aws-secret-access-key}}
-          AWS_DEFAULT_REGION: ${{vars.aws-default-region}}
+          AWS_DEFAULT_REGION: ${{inputs.aws-default-region}}
       - name: Comment on PR
         uses: actions/github-script@v7
         env:
           INTERNAL_CHANGELOG: ${{steps.generate-internal-changelog.outputs.changelog}}
           EXTERNAL_CHANGELOG: ${{steps.generate-external-changelog.outputs.changelog}}
         with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
+          github-token: ${{secrets.github-token}}
           script: |
             const header = '### Automated Changelog';
             const internal = `<details><summary>Internal</summary>\n\n${process.env.INTERNAL_CHANGELOG}</details>`
