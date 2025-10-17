@@ -32,6 +32,6 @@ runs:
         EOF2=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
         cat << $EOF1 >> $GITHUB_OUTPUT
         changelog<<$EOF2
-        $(uv run ${{github.action_path}}/generate_changelog.py -p ${{inputs.prompt-file}} ${{inputs.base-ref}} ${{inputs.head-ref}})
+        $(uv run ${{github.action_path}}/generate_changelog.py -p $PROMPT_FILE ${{inputs.base-ref}} ${{inputs.head-ref}})
         $EOF2
         $EOF1
