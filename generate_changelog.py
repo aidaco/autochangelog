@@ -13,6 +13,7 @@ import argparse
 import logging
 import json
 import boto3
+from pathlib import Path
 from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
@@ -92,9 +93,12 @@ if __name__ == "__main__":
         logger.error("Must provide both base_ref and head_ref.")
         sys.exit(1)
 
+    if args.prompt_file:
+        prompt_path = Path(args.prompt_file)
+    else:
+        prompt_path = Path(__file__).parent/'prompts'/'internal.md'
     try:
-        with open(args.prompt_file, "r") as f:
-            prompt_template = f.read()
+        prompt_template = prompt_path.read_text()
     except FileNotFoundError:
         logger.error(f"Prompt file not found at {args.prompt_file}")
         sys.exit(1)

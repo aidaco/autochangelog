@@ -4,18 +4,49 @@ This GitHub Action automatically generates a user-friendly changelog from pull r
 
 ## How it Works
 
-The core of the project is a Python script that uses the AWS Bedrock service to interact with the Anthropic Claude Sonnet 4.5 large language model. The script gathers the git history of a pull request, sends it to the model with a detailed prompt, and formats the model's response as a changelog.
-
-The action is a composite action that runs the Python script. It can be configured to use different prompts to generate different types of changelogs. The included workflow runs the action twice to generate two distinct changelogs:
-
-*   **External Changelog:** A user-friendly summary of changes for non-technical audiences.
-*   **Internal Changelog:** A comprehensive summary of all changes for internal stakeholders (developers, QA, etc.).
-
-The workflow is configured to run on every pull request to the `main` branch. It will post both changelogs as a comment on the pull request, each within a collapsible "details" element. The comment will be updated if the pull request is updated.
+The core of this project is a Python script that leverages the AWS Bedrock service to interact with the Anthropic Claude Sonnet 4.5 large language model. The script analyzes the git history of a pull request, sends it to the model with a detailed prompt, and formats the model's response into a changelog. This process can be customized to generate different types of changelogs by using different prompts.
 
 ## Usage
 
-To use this action in your own repository, create a workflow file (e.g., `.github/workflows/generate-changelog.yml`) with the following content:
+There are three ways to use this autochangelog generator:
+
+### 1. Reusable Workflow
+
+This is the easiest way to use the autochangelog generator. You can call the reusable workflow from your own workflow file. This will generate both an internal and an external changelog and post them as a comment on the pull request.
+
+Create a workflow file (e.g., `.github/workflows/generate-changelog.yml`) with the following content. Make sure to replace `<your-org>/autochangelog` with the correct path to your repository.
+
+```yaml
+name: Generate Changelogs
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+    branches:
+      - main
+jobs:
+  generate-changelog:
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: aidaco/autochangelog/.github/workflows/generate-changelogs.yml@main
+    with:
+      aws-default-region: ${{vars.AWS_DEFAULT_REGION}}
+  secrets:
+    aws-access-key-id: ${{secrets.AWS_ACCESS_KEY_ID}}
+    aws-secret-access-key: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+    github-token: ${{secrets.GITHUB_TOKEN}}
+```
+
+You will also need to create the following secrets and variables in your repository's settings:
+*   `AWS_ACCESS_KEY_ID`: Your AWS access key ID.
+*   `AWS_SECRET_ACCESS_KEY`: Your AWS secret access key.
+*   `AWS_DEFAULT_REGION`: (as a variable) The AWS region where you want to run the Bedrock service.
+
+### 2. GitHub Action
+
+You can also use the action directly in your workflow. This gives you more control over how the changelogs are generated and used. For example, you can choose to only generate one type of changelog, or you can use the output of the action in other steps in your workflow.
 
 ```yaml
 name: Generate Changelog
@@ -38,71 +69,40 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Generate internal changelog
-        id: generate-internal-changelog
-        uses: ./
+      - name: Generate changelog
+        id: generate-changelog
+        uses: aidaco/autochangelog@main
         with:
-          prompt-preset: internal
           base-ref: ${{github.base_ref}}
           head-ref: ${{github.head_ref}}
         env:
           AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
           AWS_DEFAULT_REGION: ${{vars.AWS_DEFAULT_REGION}}
-      - name: Generate external changelog
-        id: generate-external-changelog
-        uses: ./
-        with:
-          prompt-preset: external
-          base-ref: ${{github.base_ref}}
-          head-ref: ${{github.head_ref}}
+      - name: Write CHANGELOG.md
         env:
-          AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
-          AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
-          AWS_DEFAULT_REGION: ${{vars.AWS_DEFAULT_REGION}}
-      - name: Comment on PR
-        uses: actions/github-script@v7
-        env:
-          INTERNAL_CHANGELOG: ${{steps.generate-internal-changelog.outputs.changelog}}
-          EXTERNAL_CHANGELOG: ${{steps.generate-external-changelog.outputs.changelog}}
+          CHANGELOG: ${{steps.generate-changelog.outputs.changelog}}
+        run: echo $CHANGELOG > CHANGELOG.md
+      - name: Upload CHANGELOG.md
+        uses: actions/upload-artifact@v4
         with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            const header = '### Automated Changelog';
-            const internal = `<details><summary>Internal</summary>\n\n${process.env.INTERNAL_CHANGELOG}</details>`
-            const external = `<details><summary>External</summary>\n\n${process.env.EXTERNAL_CHANGELOG}</details>`
-            const body = header + "\n\n" + internal + "\n\n" + external;
-
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const existingComment = comments.find(comment => 
-              comment.user.login === 'github-actions[bot]' && comment.body.startsWith(header)
-            );
-
-            if (existingComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body: body
-              });
-            } else {
-              await github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: body
-              });
-            }
+          name: generated-changelog
+          path: CHANGELOG.md
 ```
 
-You will also need to create the following secrets and variables in your repository's settings:
-*   `AWS_ACCESS_KEY_ID`: Your AWS access key ID.
-*   `AWS_SECRET_ACCESS_KEY`: Your AWS secret access key.
-*   `AWS_DEFAULT_REGION`: The AWS region where you want to run the Bedrock service.
+### 3. Manual Script Execution
+
+You can run the script locally to generate a changelog for any two git refs.
+
+1.  Install `uv`.
+2.  Create a `.env` file with the necessary AWS credentials. You can use `.env.sample` as a template.
+3.  Run the `generate_changelog.py` script with the base and head refs, specifying which prompt to use:
+
+```bash
+uv run python generate_changelog.py <base_ref> <head_ref>
+```
+
+This will print the changelog to standard output.
 
 ## Action Inputs
 
@@ -118,24 +118,6 @@ You will also need to create the following secrets and variables in your reposit
 | Name | Description |
 |---|---|
 | `changelog` | The generated changelog text. |
-
-## Local Development & Manual Changelog Generation
-
-You can run the script locally to generate a changelog for any two git refs.
-
-1.  Install Python 3.12+ and `uv`.
-2.  Create a `.env` file with the necessary AWS credentials. You can use `.env.sample` as a template.
-3.  Run the `generate_changelog.py` script with the base and head refs, specifying which prompt to use:
-
-```bash
-# Generate the external changelog
-uv run python generate_changelog.py -p prompts/external.md <base_ref> <head_ref>
-
-# Generate the internal changelog
-uv run python generate_changelog.py -p prompts/internal.md <base_ref> <head_ref>
-```
-
-This will print the changelog to standard output.
 
 ## Prompts
 
