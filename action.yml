@@ -24,9 +24,9 @@ runs:
       shell: bash
       run: |
         if [ -n "${{inputs.prompt-file}}" ]; then
-          content=$(<"${{inputs.prompt-file}}")
+          PROMPT_FILE="${{inputs.prompt-file}}"
         else
-          content=$(<"${{github.action_path}}/prompts/${{inputs.prompt-preset}}.md")
+          PROMPT_FILE="${{github.action_path}}/prompts/${{inputs.prompt-preset}}.md"
         fi
         EOF1=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
         EOF2=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
