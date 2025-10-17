@@ -29,7 +29,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{secrets.aws-access-key-id}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.aws-secret-access-key}}
-          AWS_DEFAULT_REGION: ${{vars.aws-default-region}}
+          AWS_DEFAULT_REGION: ${{inputs.aws-default-region}}
       - name: Generate external changelog
         id: generate-external-changelog
         uses: ./
