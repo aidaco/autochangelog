@@ -18,13 +18,11 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Install UV
-        uses: astral-sh/setup-uv@v6
       - name: Generate internal changelog
         id: generate-internal-changelog
         uses: ./
         with:
-          prompt-file: internal-changelog-prompt.md
+          prompt-preset: internal
           base-ref: ${{github.base_ref}}
           head-ref: ${{github.head_ref}}
         env:
@@ -35,7 +33,7 @@ jobs:
         id: generate-external-changelog
         uses: ./
         with:
-          prompt-file: external-changelog-prompt.md
+          prompt-preset: external
           base-ref: ${{github.base_ref}}
           head-ref: ${{github.head_ref}}
         env:
