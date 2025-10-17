@@ -1,6 +1,6 @@
 name: Generate changelog
 inputs:
-  preset-prompt:
+  prompt-preset:
     type: string
     default: internal
   prompt-file:
